@@ -2,7 +2,7 @@ import asyncio
 import time
 import unittest
 
-from vedirwiz.catalog import FAMILIES, metadata, registers, validate_value
+from vedirwiz.catalog import FAMILIES, NETWORK_UNAVAILABLE, metadata, registers, validate_value
 from vedirwiz.controller import Controller
 from ve_direct.exceptions import RegisterError
 
@@ -42,6 +42,18 @@ class CatalogTests(unittest.TestCase):
         self.assertIsNone(validate_value(bmv["BMV_ALARM_LOW_TEMPERATURE"],None))
         with self.assertRaises(ValueError):
             validate_value(bmv["BMV_DESCRIPTION"],"Non-ASCII é")
+
+    def test_network_sentinels_are_unavailable_and_scroll_speed_includes_three(self):
+        rows = {r["name"]: r for r in metadata("MPPT")}
+        regs = registers("MPPT")
+        for name in NETWORK_UNAVAILABLE:
+            with self.subTest(name=name):
+                self.assertEqual(rows[name]["nullable"], "Unavailable")
+                self.assertIsNone(validate_value(regs[name], None))
+        self.assertEqual({c["value"] for c in rows["DISPLAY_SCROLL_SPEED"]["choices"]},
+                         {"slow", "speed_2", "speed_3", "speed_4", "fast"})
+        self.assertEqual(next(c["label"] for c in rows["DISPLAY_SCROLL_SPEED"]["choices"] if c["value"]=="speed_3"), "3")
+        self.assertEqual(validate_value(regs["DISPLAY_SCROLL_SPEED"], "speed_3"), "speed_3")
 
 
 class DeviceTests(unittest.TestCase):
@@ -148,6 +160,17 @@ class DeviceTests(unittest.TestCase):
                 job=wait_job(self.controller)
                 self.assertEqual(job["status"],"complete",job["error"])
                 self.assertGreater(len(self.controller.snapshot()["values"]),20)
+
+    def test_demo_mppt_reports_standalone_network_inputs_as_none(self):
+        state=self.controller.snapshot()
+        for name in NETWORK_UNAVAILABLE:
+            with self.subTest(name=name):
+                record=state["values"][name]
+                self.assertEqual(record["status"],"available")
+                self.assertIsNone(record["value"])
+        self.assertEqual(state["values"]["DISPLAY_SCROLL_SPEED"]["value"],"speed_3")
+        self.assertIsNone(state["values"]["BATTERY_VOLTAGE_SENSE"]["value"])
+        self.assertNotIn("BATTERY_VOLTAGE_SENSE",self.controller.export_profile()["settings"])
 
 
 if __name__=="__main__":

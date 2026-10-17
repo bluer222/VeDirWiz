@@ -130,8 +130,11 @@ disconnect and reconnect. It does not automatically resume uncertain writes.
 | MULTI_RS | Multi RS, includes experimental definitions | 259 | 99 |
 
 A catalog entry does not guarantee support on every model or firmware.
-Rejected reads remain visible as unavailable. The selected family is explicit;
-product identification alone does not reliably determine all preset variants.
+Rejected reads remain visible as unavailable. Standalone SmartSolar firmware
+1.64 reports unused network charge inputs as Unavailable rather than as
+maximum wire integers, and display scroll speed 3 is a valid intermediate
+choice. The selected family is explicit; product identification alone does
+not reliably determine all preset variants.
 
 Phoenix's public HEX reference lists dynamic-cutoff coefficients without
 their curve equation. The app graphs **measured cutoff against measured AC

@@ -43,6 +43,11 @@ DEFAULTS = {
     "MAXIMUM_POWER_TODAY": 286, "MAXIMUM_POWER_YESTERDAY": 301, "USER_YIELD": 328.4, "SYSTEM_YIELD": 520.1,
     "SERIAL_NUMBER": "DEMO26090001", "MODEL_NAME": "VE.Direct demonstration", "DEVICE_UPTIME": 5400,
     "SETTINGS_CHANGED_TIMESTAMP": None, "LOAD_OUTPUT_STATE": True, "LOAD_CURRENT": 0.7,
+    # Standalone SmartSolar firmware 1.64: unused network inputs are sentinels.
+    "CHARGE_VOLTAGE_SETPOINT": None, "BATTERY_IDLE_VOLTAGE": None,
+    "BATTERY_CHARGE_CURRENT": None, "TOTAL_CHARGE_CURRENT": None, "CHARGE_CURRENT_LIMIT": None,
+    "BATTERY_VOLTAGE_SENSE": None, "BATTERY_TEMPERATURE_SENSE": None,
+    "DISPLAY_SCROLL_SPEED": "speed_3",
 }
 
 
@@ -54,10 +59,11 @@ class DemoTransport(SimulatedTransport):
         replies = {}
         for reg in registers(flavor).values():
             choices = ENUM_MAPS.get(reg.enum or "", {})
-            value = DEFAULTS.get(reg.name)
             if reg.name.endswith("BAT_TYPE"):
                 value = "user"
-            if value is None and reg.name != "SETTINGS_CHANGED_TIMESTAMP":
+            elif reg.name in DEFAULTS:
+                value = DEFAULTS[reg.name]
+            else:
                 value = False if reg.cls == "BOOLEAN" else next(iter(choices.values()), 0) if reg.cls == "ENUM" else [] if reg.cls == "BITMASK" else "Demo" if reg.cls == "STRING" else 0
             if reg.cls == "ENUM" and value not in choices.values():
                 value = next(iter(choices.values()), 0)

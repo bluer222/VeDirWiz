@@ -62,6 +62,11 @@ PRESET_LABELS = {"type_1": "Gel · Victron long life", "type_2": "Gel · Victron
                  "type_6": "Tubular plate · cyclic mode 2", "type_7": "Tubular plate · cyclic mode 3",
                  "type_8": "LiFePO4", "agm_normal": "AGM · normal", "agm_high": "AGM · high voltage",
                  "lithium": "Lithium", "lifepo4": "LiFePO4", "user": "User defined"}
+# 1=slow and 5=fast are documented; firmware 1.64 also reports 2–4.
+CHOICE_LABELS = {**PRESET_LABELS, "slow": "Slow", "speed_2": "2", "speed_3": "3",
+                 "speed_4": "4", "fast": "Fast"}
+NETWORK_UNAVAILABLE = ("CHARGE_VOLTAGE_SETPOINT", "BATTERY_IDLE_VOLTAGE",
+                       "BATTERY_CHARGE_CURRENT", "TOTAL_CHARGE_CURRENT", "CHARGE_CURRENT_LIMIT")
 
 
 def human(name):
@@ -131,7 +136,7 @@ def metadata(flavor):
         item = {"name": reg.name, "label": label, "group": group, "kind": reg.cls, "access": reg.access,
                 "writable": reg.access in ("READ_WRITE", "WRITE_ONLY"), "command": reg.name in COMMANDS,
                 "unit": unit, "step": reg.scale * factor, "offset": offset, "factor": factor,
-                "choices": [{"value": v, "label": PRESET_LABELS.get(v, human(v)) if reg.name.endswith("BAT_TYPE") else human(v)} for v in ENUM_MAPS.get(reg.enum or "", {}).values()],
+                "choices": [{"value": v, "label": CHOICE_LABELS.get(v, human(v))} for v in ENUM_MAPS.get(reg.enum or "", {}).values()],
                 "requiresUserPreset": reg.name in CUSTOM_TARGETS,
                 "nullable": NULL_LABELS.get(reg.name, "Disabled" if reg.unit == "K" and reg.access == "READ_WRITE" else None),
                 "maxLength": reg.max_length - 1 if reg.max_length else None,

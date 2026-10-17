@@ -152,6 +152,26 @@ class DesktopTests(unittest.TestCase):
         self.assertTrue(load.review_button.isEnabled())
         self.assertIn("across all windows",load.pending_label.text())
 
+    def test_unavailable_network_editors_and_scroll_speed_do_not_stage_writes(self):
+        from vedirwiz.catalog import NETWORK_UNAVAILABLE
+        network=self.window.navigate("network")
+        self.app.processEvents()
+        for name in NETWORK_UNAVAILABLE:
+            with self.subTest(name=name):
+                row=next(r for r in self.window.rows if r.name==name)
+                self.assertTrue(network.page.isAncestorOf(row))
+                self.assertEqual(row.mode.currentData(),"null")
+                self.assertEqual(row.mode.currentText(),"Unavailable")
+                self.assertFalse(row.numeric.isVisible())
+        self.assertFalse(self.window.pending)
+        display=self.window.navigate("display")
+        self.app.processEvents()
+        row=next(r for r in self.window.rows if r.name=="DISPLAY_SCROLL_SPEED")
+        self.assertTrue(display.page.isAncestorOf(row))
+        self.assertEqual(row.combo.currentData(),"speed_3")
+        self.assertEqual(row.combo.currentText(),"3")
+        self.assertFalse(self.window.pending)
+
     def test_question_mark_opens_help_in_its_own_window(self):
         from PySide6.QtCore import Qt
         from PySide6.QtTest import QTest
