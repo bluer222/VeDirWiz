@@ -3,6 +3,7 @@ import os
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM","offscreen")
 
@@ -19,6 +20,11 @@ class DesktopTests(unittest.TestCase):
         QSettings.setPath(QSettings.Format.IniFormat,QSettings.Scope.UserScope,cls.preferences.name)
         cls.app=QApplication.instance() or QApplication([])
         cls.app.setStyle("Fusion")
+        # The organization/application constructor otherwise uses NativeFormat.
+        settings_patch=patch("vedirwiz.desktop.QSettings",lambda organization,application:
+                             QSettings(QSettings.Format.IniFormat,QSettings.Scope.UserScope,organization,application))
+        settings_patch.start()
+        cls.addClassCleanup(settings_patch.stop)
 
     @classmethod
     def tearDownClass(cls):

@@ -6,9 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "vedirwiz"
 version = "0.1.0"
 description = "Graphical VE.Direct configuration and monitoring"
+readme = "README.md"
 requires-python = ">=3.10"
 license = "AGPL-3.0-only"
-dependencies = ["PySide6>=6.6"]
+dependencies = [
+    "PySide6>=6.6",
+    "ve-direct @ git+https://github.com/bluer222/ve.direct.git@main",
+]
 
 [project.optional-dependencies]
 serial = ["pyserial>=3.5", "pyserial-asyncio>=0.6"]

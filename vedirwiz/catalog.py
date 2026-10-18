@@ -130,7 +130,7 @@ def metadata(flavor):
     result = []
     for reg in registers(flavor).values():
         label, group = label_for(reg, flavor), group_for(reg)
-        unit = "°C" if reg.unit in ("K", "C") else "mV" if reg.name == "BMV_SHUNT_VOLTS" else "A" if reg.name == "TAIL_CURRENT" else "days" if reg.name == "AUTOMATIC_EQUALISATION_MODE" else reg.unit.replace("mV/K", "mV/°C").replace("%CAP/degC", "%/°C")
+        unit = "°C" if reg.unit in ("K", "C") else "mV" if reg.name == "BMV_SHUNT_VOLTS" else reg.unit.replace("mV/K", "mV/°C").replace("%CAP/degC", "%/°C")
         offset, factor = (-273.15, 1) if reg.unit == "K" else (0, 1000) if reg.name == "BMV_SHUNT_VOLTS" else (0, 1)
         bounds = numeric_bounds(reg)
         item = {"name": reg.name, "label": label, "group": group, "kind": reg.cls, "access": reg.access,

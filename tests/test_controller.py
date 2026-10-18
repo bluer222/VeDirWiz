@@ -1,10 +1,13 @@
 import asyncio
 import time
 import unittest
+from unittest.mock import patch
 
 from vedirwiz.catalog import FAMILIES, NETWORK_UNAVAILABLE, metadata, registers, validate_value
 from vedirwiz.controller import Controller
+from vedirwiz.demo import DemoTransport
 from ve_direct.exceptions import RegisterError
+from ve_direct.transport import make_text_block
 
 
 def wait_job(controller):
@@ -54,6 +57,16 @@ class CatalogTests(unittest.TestCase):
                          {"slow", "speed_2", "speed_3", "speed_4", "fast"})
         self.assertEqual(next(c["label"] for c in rows["DISPLAY_SCROLL_SPEED"]["choices"] if c["value"]=="speed_3"), "3")
         self.assertEqual(validate_value(regs["DISPLAY_SCROLL_SPEED"], "speed_3"), "speed_3")
+
+    def test_catalog_uses_library_units_and_converts_display_units(self):
+        mppt = {r["name"]: r for r in metadata("MPPT")}
+        self.assertEqual(mppt["TAIL_CURRENT"]["unit"], "A")
+        self.assertEqual(mppt["AUTOMATIC_EQUALISATION_MODE"]["unit"], "days")
+        self.assertEqual(mppt["BAT_TEMPERATURE"]["unit"], "°C")
+        self.assertEqual(mppt["BAT_TEMPERATURE"]["offset"], -273.15)
+        bmv = {r["name"]: r for r in metadata("BMV")}
+        self.assertEqual(bmv["BMV_SHUNT_VOLTS"]["unit"], "mV")
+        self.assertEqual(bmv["BMV_SHUNT_VOLTS"]["factor"], 1000)
 
 
 class DeviceTests(unittest.TestCase):
@@ -171,6 +184,27 @@ class DeviceTests(unittest.TestCase):
         self.assertEqual(state["values"]["DISPLAY_SCROLL_SPEED"]["value"],"speed_3")
         self.assertIsNone(state["values"]["BATTERY_VOLTAGE_SENSE"]["value"])
         self.assertNotIn("BATTERY_VOLTAGE_SENSE",self.controller.export_profile()["settings"])
+
+    def test_text_telemetry_uses_library_units_for_converted_values(self):
+        class HistoryTransport(DemoTransport):
+            def __init__(self, flavor):
+                super().__init__(flavor)
+                self.buffer.extend(make_text_block({
+                    "H7": "12000", "H8": "14500", "H15": "11800", "H16": "14300",
+                    "CE": "-1500", "SOC": "784", "H17": "1234", "CS": "3",
+                }))
+
+        with patch("vedirwiz.controller.DemoTransport", HistoryTransport):
+            self.controller.call(self.controller.connect(demo=True))
+        self.assertEqual(wait_job(self.controller)["status"], "complete")
+        telemetry = self.controller.snapshot()["telemetry"]
+        for label, value, unit in (("H7", 12, "V"), ("H8", 14.5, "V"),
+                                   ("H15", 11.8, "V"), ("H16", 14.3, "V"),
+                                   ("CE", -1.5, "Ah"), ("SOC", 78.4, "%"),
+                                   ("H17", 12.34, "kWh"), ("CS", 3, "")):
+            with self.subTest(label=label):
+                self.assertAlmostEqual(telemetry[label]["value"], value)
+                self.assertEqual(telemetry[label]["unit"], unit)
 
 
 if __name__=="__main__":

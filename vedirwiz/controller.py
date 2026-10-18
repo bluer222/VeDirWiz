@@ -118,8 +118,7 @@ class Controller:
                 now = utc()
                 with self.lock:
                     for name, field in frame.fields.items():
-                        unit = getattr(field, "si_unit", None) or LABEL_INFO.get(name, {}).get("unit") or ""
-                        unit = "V" if name in ("V", "V2", "V3", "VS", "VM", "VPV", "AC_OUT_V", "DC_IN_V") else "A" if name in ("I", "I2", "I3", "IL", "AC_OUT_I", "DC_IN_I") else "%" if name in ("SOC", "DM") else "Ah" if name in ("CE", "H1", "H2", "H3", "H6") else "kWh" if name in ("H17", "H18", "H19", "H20", "H22") else unit
+                        unit = field.si_unit or ""
                         self.state["telemetry"][name] = {"value": values.get(name), "human": field.human or "", "label": LABEL_INFO.get(name, {}).get("desc", name), "unit": unit, "time": now}
                     self.state["frames"] += 1
                     self.state["lastFrame"] = time.time()
